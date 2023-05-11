@@ -1,4 +1,4 @@
-# FatturaREST_Client
+# Fattura_REST_Client
 > Example client for the RESTful API "Fattura" (Invoice) developed with Apache Commons HTTP
 
  This is a simple client for the "Fattura" (invoice) RESTful API developed during the course lectures. It shows how to call the service using Apache Commons HTTP.
