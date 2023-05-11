@@ -7,10 +7,13 @@
             </packagings>
             <goals>
                 <goal>process-classes</goal>
-                <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:3.0.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath org.mwt.soa.examples.fattura.Fattura_REST_Client_Standard</exec.args>
+                <exec.vmArgs></exec.vmArgs>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
+                <exec.appArgs></exec.appArgs>
+                <exec.mainClass>org.mwt.soa.examples.fattura.FatturaREST_Client</exec.mainClass>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>

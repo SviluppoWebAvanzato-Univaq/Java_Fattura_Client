@@ -1,10 +1,14 @@
 package org.mwt.soa.examples.fattura;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -16,11 +20,12 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 
 public class FatturaREST_Client {
 
-    private static final String baseURI = "http://localhost:8081/FatturaREST/rest";
-    //private static final String baseURI = "http://localhost:8081/Fattura_REST_Server_Servlet_Maven/rest";
+    private static final String baseURI = "http://localhost:8080/FatturaREST/rest";
+    //private static final String baseURI = "http://localhost:8080/Fattura_REST_Server_Servlet_Maven/rest";
     //private static final String baseURI = "http://localhost/Fattura_REST_Server_PHP/public";
 
     //una entry di esempio, già serializzata in JSON (come farebbe Google Gson, per esempio)  
@@ -164,8 +169,6 @@ public class FatturaREST_Client {
         get_request.setHeader("Accept", "application/json");
         execute_and_dump(get_request);
 
-        /*   
-
         System.out.println();
        
         //10 -- Login
@@ -184,17 +187,26 @@ public class FatturaREST_Client {
 
         System.out.println();
 
-        //11 -- Collezione per anno (richiesta soggetta ad autenticazione)
-        System.out.println("11 -- Collezione per anno (richiesta soggetta ad autenticazione)");
+        //11a -- Collezione per anno (richiesta soggetta ad autenticazione)
+        System.out.println("11a -- Collezione per anno (richiesta soggetta ad autenticazione)");
         get_request = new HttpGet(baseURI + "/fatture/2020");
         get_request.setHeader("Accept", "application/json");
         get_request.setHeader("Authorization", ah.getValue());
         execute_and_dump(get_request);
-        */
+        
+        System.out.println();
+
+        //11b -- Collezione per anno (tentativo senza autenticazione)
+        System.out.println("11b -- Collezione per anno (tentativo senza autenticazione)");
+        get_request = new HttpGet(baseURI + "/fatture/2020");
+        get_request.setHeader("Accept", "application/json");
+        execute_and_dump(get_request);
+
     }
 
     /**
      * @param args the command line arguments
+     * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException {
         FatturaREST_Client instance = new FatturaREST_Client();
