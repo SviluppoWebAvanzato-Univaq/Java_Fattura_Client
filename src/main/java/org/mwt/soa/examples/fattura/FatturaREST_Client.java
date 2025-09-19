@@ -3,28 +3,28 @@ package org.mwt.soa.examples.fattura;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPatch;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPatch;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
+
 
 public class FatturaREST_Client {
 
-    private static final String baseURI = "http://localhost:8085/FatturaREST/rest";
+    private static final String baseURI = "http://localhost:8080/FatturaREST/rest";
     //private static final String baseURI = "http://localhost:8080/Fattura_REST_Server_Servlet_Maven/rest";
     //private static final String baseURI = "http://localhost/Fattura_REST_Server_PHP/public";
 
@@ -36,18 +36,16 @@ public class FatturaREST_Client {
     //usiamo Apache Httpclient perchè molto più intuitivo della classi Java.net...
     CloseableHttpClient client = HttpClients.createDefault();
 
-    private void execute_and_dump(HttpRequestBase request) {
+    private void logRequest(ClassicHttpRequest request) {
         try {
-            System.out.println();
-            System.out.println("REQUEST: ");
             System.out.println("* Metodo: " + request.getMethod());
-            System.out.println("* URL: " + request.getURI());
+            System.out.println("* URL: " + request.getRequestUri());
             if (request.getFirstHeader("Accept") != null) {
                 System.out.println("* " + request.getFirstHeader("Accept"));
             }
             System.out.println("* Headers: ");
-            Header[] headers = request.getAllHeaders();
-            for (Header header : headers) {
+            Header[] request_headers = request.getHeaders();
+            for (Header header : request_headers) {
                 System.out.println("** " + header.getName() + " = " + header.getValue());
             }
             switch (request.getMethod()) {
@@ -78,129 +76,112 @@ public class FatturaREST_Client {
                 default:
                     break;
             }
-            try (CloseableHttpResponse response = client.execute(request)) {
+        } catch (IOException ex) {
+            System.out.println("Cannot dump request: " + ex.getMessage());
+        }
+    }
+
+    private void logResponse(ClassicHttpResponse response) {
+        System.out.println("* Headers: ");
+        Header[] response_headers = response.getHeaders();
+        for (Header header : response_headers) {
+            System.out.println("** " + header.getName() + " = " + header.getValue());
+        }
+        System.out.println("* Return status: " + response.getReasonPhrase() + " (" + response.getCode() + ")");
+        HttpEntity entity = response.getEntity();
+        if (entity != null) {
+            try {
+                entity.writeTo(System.out);
+                System.out.println();
+            } catch (IOException ex) {
+                System.out.println("Cannot dump response: " + ex.getMessage());
+            }
+        }
+    }
+
+    private void executeAndDump(String description, ClassicHttpRequest request) {
+
+        System.out.println("--------------------------------------------------------------------------------");
+        System.out.println(description);
+        System.out.println("--------------------------------------------------------------------------------");
+        System.out.println("REQUEST: ");
+        logRequest(request);
+        try {
+            client.execute(request, response -> {
                 //preleviamo il contenuto della risposta
                 System.out.println("RESPONSE: ");
-                System.out.println("* Headers: ");
-                headers = response.getAllHeaders();
-                for (Header header : headers) {
-                    System.out.println("** " + header.getName() + " = " + header.getValue());
-                }
-                System.out.println("* Return status: " + response.getStatusLine().getReasonPhrase() + " (" + response.getStatusLine().getStatusCode() + ")");
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    entity.writeTo(System.out);
-                    System.out.println();
-                }
-            }
+                logResponse(response);
+                return null;
+            });
         } catch (IOException ex) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Cannot execute request: " + ex.getMessage());
         }
+        System.out.println("--------------------------------------------------------------------------------");
+        System.out.println();
+
     }
 
     public void doTests() throws IOException {
 
-        //1 -- Lista entries (JSON)
-        System.out.println("1 -- Lista entries (JSON)");
+        
         //creiamo la richiesta (GET)
         HttpGet get_request = new HttpGet(baseURI + "/fatture");
         get_request.setHeader("Accept", "application/json");
-        execute_and_dump(get_request);
+        executeAndDump("Lista entries (JSON)",get_request);
 
-        System.out.println();
-
-        //1bis -- Numero entries (JSON)
-        System.out.println("1bis -- Numero entries (JSON)");
-        //creiamo la richiesta (GET)
+    
         get_request = new HttpGet(baseURI + "/fatture/count");
         get_request.setHeader("Accept", "application/json");
-        execute_and_dump(get_request);
+        executeAndDump("Numero entries (JSON)",get_request);
 
-        System.out.println();
-
-        //3 -- Singola entry (JSON)
-        System.out.println("3 -- Singola entry (JSON)");
         get_request = new HttpGet(baseURI + "/fatture/2020/1234");
         get_request.setHeader("Accept", "application/json");
-        execute_and_dump(get_request);
+        executeAndDump("Singola entry (JSON)",get_request);
 
-        System.out.println();
-
-        //5 -- Filtraggio collection tramite parametri GET
-        System.out.println("5 -- Filtraggio collection tramite parametri GET");
         get_request = new HttpGet(baseURI + "/fatture?partitaIVA=8574557");
         get_request.setHeader("Accept", "application/json");
-        execute_and_dump(get_request);
-
-        System.out.println();
-
-        //6 -- Creazione  
-        System.out.println("6 -- Creazione entry");
+        executeAndDump("Filtraggio collection tramite parametri GET",get_request);
+        
         HttpPost post_request = new HttpPost(baseURI + "/fatture");
         //per una richiesta POST, prepariamo anche il payload specificandone il tipo
         HttpEntity payload = new StringEntity(dummy_json_entry, ContentType.APPLICATION_JSON);
         //e lo inseriamo nella richiesta
         post_request.setEntity(payload);
-        execute_and_dump(post_request);
+        executeAndDump("Creazione entry",post_request);
 
-        System.out.println();
-
-        //7 -- Aggiornamento 
-        System.out.println("7 -- Aggiornamento entry");
         HttpPut put_request = new HttpPut(baseURI + "/fatture/2020/12345");
         //per una richiesta PUT, prepariamo anche il payload specificandone il tipo
         payload = new StringEntity(dummy_json_entry, ContentType.APPLICATION_JSON);
         //e lo inseriamo nella richiesta
         put_request.setEntity(payload);
-        execute_and_dump(put_request);
+        executeAndDump("Aggiornamento entry",put_request);
 
-        System.out.println();
-
-        //8 -- Eliminazione
-        System.out.println("8 -- Eliminazione entry");
         HttpDelete delete_request = new HttpDelete(baseURI + "/fatture/2020/12345");
-        execute_and_dump(delete_request);
+        executeAndDump("Eliminazione entry",delete_request);
 
-        System.out.println();
-
-        //9 -- Dettaglio Entry (JSON)
-        System.out.println("9 -- Dettaglio entry (JSON)");
         get_request = new HttpGet(baseURI + "/fatture/2020/12345/elementi");
         get_request.setHeader("Accept", "application/json");
-        execute_and_dump(get_request);
-
-        System.out.println();
+        executeAndDump("Dettaglio entry (JSON)",get_request);
        
-        //10 -- Login
-        System.out.println("10 -- Login");
         post_request = new HttpPost(baseURI + "/auth/login");
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("username", "pippo"));
         params.add(new BasicNameValuePair("password", "pippopass"));
         post_request.setEntity(new UrlEncodedFormEntity(params));
-        execute_and_dump(post_request);
+        executeAndDump("Login",post_request);      
         //ripetiamo la request per catturare il token...
-        Header ah;
-        try (CloseableHttpResponse response = client.execute(post_request)) {
-            ah = response.getFirstHeader("Authorization");
-        }
+        Header ah = client.execute(post_request, response -> {
+            return response.getFirstHeader("Authorization");
+        });
 
-        System.out.println();
-
-        //11a -- Collezione per anno (richiesta soggetta ad autenticazione)
-        System.out.println("11a -- Collezione per anno (richiesta soggetta ad autenticazione)");
         get_request = new HttpGet(baseURI + "/fatture/2020");
         get_request.setHeader("Accept", "application/json");
         get_request.setHeader("Authorization", ah.getValue());
-        execute_and_dump(get_request);
-        
-        System.out.println();
+        executeAndDump("Collezione per anno (richiesta soggetta ad autenticazione)",get_request);
 
-        //11b -- Collezione per anno (tentativo senza autenticazione)
-        System.out.println("11b -- Collezione per anno (tentativo senza autenticazione)");
         get_request = new HttpGet(baseURI + "/fatture/2020");
         get_request.setHeader("Accept", "application/json");
-        execute_and_dump(get_request);
+        executeAndDump("Collezione per anno (tentativo senza autenticazione)",get_request);
 
     }
 
